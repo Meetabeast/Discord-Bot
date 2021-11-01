@@ -1,5 +1,5 @@
 const fs = require("fs");
-const devGuild = "848264314603175987";
+const devGuild = "Discord Guild ID";
 
 module.exports = async (client, cmd) => {
     const commandFiles = fs.readdirSync("./commands").filter((files) => files.endsWith(".js"));
