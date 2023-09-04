@@ -1,0 +1,21 @@
+{
+  "name": "d.js-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Metabeast",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "fs": "^0.0.1-security",
+    "mongoose": "^7.4.3",
+    "node-fetch": "^2.6.13",
+    "nodemon": "^3.0.1",
+    "path": "^0.12.7"
+  }
+}
