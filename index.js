@@ -310,7 +310,26 @@ client.on("messageCreate", async (message) => {
             { UserId: message.author.id, GuildId: message.guild.id },
             { $inc: { Level: 1, XP: -xpNeeded }, $set: { lastUpdated: new Date() } }
         );
-        message.reply(`Congratulations! You've leveled up to level ${updatedData.Level + 1}!`);
+        
+        LevelGuild.findOne({ GuildId: message.guild.id }).then(data => {
+            if(data) {
+                let channel = message.guild.channels.cache.get(data.channelId);
+                if(!channel) return message.reply({ content: `Congratulations! You've leveled up to level ${updatedData.Level + 1}!`});
+                let levelUpMessage = data.levelUpMessage;
+                if(!levelUpMessage) return levelUpMessage = "Lol";
+
+                levelUpMessage = levelUpMessage.replace("{guild}", `${message.guild.name}`);
+                levelUpMessage = levelUpMessage.replace("{level}", `${updatedData.Level + 1}`);
+                levelUpMessage = levelUpMessage.replace("{user}", `${message.member}`)
+
+                channel.send({ content: `${levelUpMessage}` });
+            } else {
+                return message.reply({ content: `Congratulations! You've leveled up to level ${updatedData.Level + 1}!`})
+            }
+        }).catch(err => {
+            console.log(err);
+            return message.reply({ content: `Congratulations! You've leveled up to level ${updatedData.Level + 1}!`});
+        });
     }
 });
 
