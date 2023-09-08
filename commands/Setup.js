@@ -2,6 +2,7 @@ const TicketModel = require("../models/TicketModel");
 const GuildModel = require("../models/GuildModel");
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRow, ActionRowBuilder, PermissionsBitField } = require("discord.js");
 const VoiceModel = require("../models/VoiceModel");
+const LevelGuild = require("../models/LevelGuild");
 
 module.exports = {
     name: "setup",
@@ -94,7 +95,26 @@ module.exports = {
                     description: "Enter a channel where all users need to be join to get a personal channel!"
                 }
             ]
-        }
+        },
+        {
+            name: "level",
+            description: "Setup for the level system",
+            type: 1,
+            options: [
+                {
+                    name: "message",
+                    description: "The message that send when the user level up ({guild}, {user}, {level})",
+                    type: 3,
+                    required: true,
+                },
+                {
+                    name: "channel",
+                    description: "The channel where the messages are sent in",
+                    type: 7,
+                    required: true
+                },
+            ],
+        },
     ],
     async execute(interaction) {
         const command = interaction.options.getSubcommand(); 
@@ -222,6 +242,35 @@ module.exports = {
                 interaction.reply({ embeds: [embed] });
             }
             break;
+            case "level": {
+                const channel = interaction.options.getChannel('channel');
+                const levelUpMessage = interaction.options.getString('message');
+
+                LevelGuild.findOne({ GuildId: interaction.guild.id }).then(async data => {
+                    if(data) {
+                        data.channelId = channel.id,
+                        data.levelUpMessage = levelUpMessage;
+
+                        data.save();
+                    } else {
+                        new LevelGuild({
+                            GuildId: interaction.guild.id,
+                            channelId: channel.id,
+                            levelUpMessage: levelUpMessage
+                        }).save();
+                    }
+                }).catch(err => {
+                    console.log("Something wen't wrong on the ticket setup!");
+                    return;
+                });
+
+                const embed = new EmbedBuilder()
+                .setTitle("Setup successfully")
+                .setColor(0xead355)
+                .setDescription("The settings was saved!");
+
+                interaction.reply({ embeds: [embed] });
+            }
         }
     }
 }
