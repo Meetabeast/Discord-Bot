@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, IntentsBitField, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField, ChannelType, VoiceChannel } = require("discord.js");
+const { Client, GatewayIntentBits, IntentsBitField, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField, ChannelType, VoiceChannel, ActivityType, Partials } = require("discord.js");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const fs = require("fs");
@@ -9,6 +9,9 @@ const { generateRandomNumber } = require("./utils");
 const VoiceModel = require("./models/VoiceModel");
 const VoiceChannelsModel = require("./models/VoiceChannelsModel");
 const GuildModel = require("./models/GuildModel");
+const LevelGuild = require("./models/LevelGuild");
+const { listenerCount } = require("process");
+const ReactionRoleModel = require("./models/ReactionRoleModel");
 const cmd = new Map();
 
 // Folders
@@ -26,11 +29,19 @@ let client = new Client({
                 IntentsBitField.Flags.GuildMessages, 
                 IntentsBitField.Flags.GuildMembers,
                 IntentsBitField.Flags.GuildVoiceStates,
-            ]
+                IntentsBitField.Flags.GuildMessageReactions
+            ],
+    partials: [
+                Partials.Reaction,
+                Partials.Message,
+                Partials.User,
+                Partials.Channel,
+    ]
 });
 
 client.on("ready", () => {
     console.log(`[BOT] ${client.user.username} is currently running on: ${client.guilds.cache.size}!`);
+    client.user.setActivity({ name: `Metabeast`, type: ActivityType.Listening})
 });
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -484,6 +495,62 @@ client.on("guildMemberAdd", async (member) => {
         
         WelcomeChannel.send({ content: data.welcomeMessage });
     });
+});
+
+client.on("messageReactionAdd", async (reaction, user) => {
+    if(reaction.message.partial) await reaction.message.fetch();
+    if(reaction.partial) await reaction.fetch();
+    if(user.bot) return;
+
+    try {
+        const found = await ReactionRoleModel.findOne({
+            GuildId: reaction.message.guild.id,
+            Emoji: reaction.emoji.id ?? reaction.emoji.name,
+        });
+
+        if(found) {
+            const role = await reaction.message.guild.roles.resolve(found.RoleId);
+            const member = await reaction.message.guild.members.fetch(user.id);
+
+            if(!role || !member) {
+                console.log("No Member found or role");
+
+                await reaction.message.reactions.removeAll();
+            }
+
+            await member.roles.add(role);
+        }
+    } catch (error) {
+        console.log(error.message);
+    }
+});
+
+client.on("messageReactionRemove", async (reaction, user) => {
+    if(reaction.message.partial) await reaction.message.fetch();
+    if(reaction.partial) await reaction.fetch();
+    if(user.bot) return;
+
+    try {
+        const found = await ReactionRoleModel.findOne({
+            GuildId: reaction.message.guild.id,
+            Emoji: reaction.emoji.id ?? reaction.emoji.name,
+        });
+
+        if(found) {
+            const role = await reaction.message.guild.roles.resolve(found.RoleId);
+            const member = await reaction.message.guild.members.fetch(user.id);
+
+            if(!role || !member) {
+                console.log("No Member found or role");
+
+                await reaction.message.reactions.removeAll();
+            }
+
+            await member.roles.remove(role);
+        }
+    } catch (error) {
+        console.log(error.message);
+    }
 })
 
 mongoose.connect(
@@ -492,6 +559,17 @@ mongoose.connect(
         useNewUrlParser: true,
         useUnifiedTopology: true,
     }
-).then(() => console.log(`[SERVER] MongoDB is running up!`))
+).then(() => console.log(`[SERVER] MongoDB is running up!`));
+
+process.on('unhandledRejection', (error) => {
+    console.error('Unhandled promise rejection:', error);
+    if(error) if(error.length > 950) error = error.slice(0, 950) + '... console have more informations about the error';
+    if(error.stack) if (error.stack.length > 950) error.stack = error.stack.slice(0, 950) + '... console have more information about the error stack';
+    if(!error.stack) return;
+});
+
+process.on('warning', (warn) => {
+    console.log(`${warn}`)
+})
 
 client.login(process.env.DISCORD_TOKEN);
