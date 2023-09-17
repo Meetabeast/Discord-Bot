@@ -8,4 +8,5 @@ You need a discord bot that can do the basic commands that you need then is that
 - Welcome Message
 - Voice Module
 - Moderation
+- Reaction Roles
 - Informations
